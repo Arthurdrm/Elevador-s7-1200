@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Script de Demonstração e Validação dos Testes do S7-1200 - Elevador SENAI.
+"""Script de Demonstração e Validação dos Testes do S7-1200 - Elevador Industrial.
 
 Gera um relatório visual completo no terminal e captura preview do simulador gráfico.
 """
@@ -22,8 +22,8 @@ RESET = "\033[0m"
 
 def print_header():
     print(f"\n{CYAN}{BOLD}{'=' * 78}")
-    print("  PROJETO_ELEVADOR_S7-1200 — RELATÓRIO DE TESTES & VALIDAÇÃO SENAI")
-    print("  Sistemas Lógicos Programáveis | Desafio Industrial 3 (AutoControl)")
+    print("  PROJETO_ELEVADOR_S7-1200 — RELATÓRIO DE TESTES TÉCNICOS & OPERAÇÃO")
+    print("  Controle de Elevador Industrial (AutoControl) | Siemens S7-1200")
     print(f"{'=' * 78}{RESET}\n")
 
 def print_step(num: int, title: str, desc: str, passed: bool, details: list[str] = None):
@@ -58,7 +58,7 @@ def main():
         ok1, [f"Cabine 1: {plc.stat_cabine_andar_1} | Tranca 1: {plc.tranca_magnetica_da_porta_1} | Tranca 2: {plc.tranca_magnetica_da_porta_2}"]
     )
 
-    # Teste 2: Situação 1 da Avaliação
+    # Teste 2: Operação no 1º Piso
     plc.botao_desce_1 = True
     plc.scan_cycle()
     plc.botao_desce_1 = False
@@ -70,15 +70,15 @@ def main():
     plc.botao_sobe_1 = False
     sobe_iniciado = plc.motor_1_sobe and plc.tranca_magnetica_da_porta_1 and plc.tranca_magnetica_da_porta_2
     
-    ok2 = desce_bloqueado and sobe_iniciado and plc.situacao_1_cumprida
+    ok2 = desce_bloqueado and sobe_iniciado
     if ok2: passed_count += 1
     print_step(
-        2, "1ª Etapa (Situação 1 SENAI): Operação no 1º Piso",
+        2, "Operação no 1º Piso (Bloqueio & Partida)",
         "Bloqueia descida indevida, inicia subida para 2º piso e tranca ambas as portas.",
         ok2, [f"Desce Bloqueado: {desce_bloqueado} | Sobe Ativo: {sobe_iniciado} | Trancas: Q0.2={plc.tranca_magnetica_da_porta_1}, Q0.3={plc.tranca_magnetica_da_porta_2}"]
     )
 
-    # Teste 3: Situação 2 da Avaliação
+    # Teste 3: Operação no 2º Piso
     plc = PLCS71200Elevador()
     plc.fim_de_curso_da_cabine_1 = True
     plc.fim_de_curso_da_cabine_2 = False # Cabine no 2º andar
@@ -97,15 +97,15 @@ def main():
     plc.botao_desce_2 = False
     desce_iniciado = plc.motor_1_desce and plc.tranca_magnetica_da_porta_1 and plc.tranca_magnetica_da_porta_2
 
-    ok3 = sobe_bloqueado and desce_iniciado and plc.situacao_2_cumprida
+    ok3 = sobe_bloqueado and desce_iniciado
     if ok3: passed_count += 1
     print_step(
-        3, "2ª Etapa (Situação 2 SENAI): Operação no 2º Piso",
+        3, "Operação no 2º Piso (Bloqueio & Partida)",
         "Bloqueia subida indevida, inicia descida para 1º piso e tranca ambas as portas.",
         ok3, [f"Sobe Bloqueado: {sobe_bloqueado} | Desce Ativo: {desce_iniciado}"]
     )
 
-    # Teste 4: Situações 3 e 4 (Chamadas Externas e Destrancamento)
+    # Teste 4: Chamadas Externas e Destrancamento Exclusivo
     plc = PLCS71200Elevador()
     plc.fim_de_curso_da_cabine_1 = False # No 1º piso
     plc.fim_de_curso_da_cabine_2 = True
@@ -125,26 +125,40 @@ def main():
     plc.scan_cycle()
     chegada_2_ok = (not plc.motor_1_sobe and not plc.tranca_magnetica_da_porta_2 and plc.tranca_magnetica_da_porta_1)
 
-    ok4 = chamada_sobe_ok and chegada_2_ok and plc.situacao_3_cumprida
+    ok4 = chamada_sobe_ok and chegada_2_ok
     if ok4: passed_count += 1
     print_step(
-        4, "3ª & 4ª Etapa (Situações 3 e 4): Chamada Externa & Destrancamento",
+        4, "Chamada Externa & Destrancamento Exclusivo",
         "Chamada remota desloca cabine e destranca exclusivamente a porta do piso de chegada.",
         ok4, [f"Chamada Subida: {chamada_sobe_ok} | Parada e Destrancamento Piso 2: {chegada_2_ok}"]
     )
 
-    # Teste 5: Cálculo da Pontuação da Rubrica
-    plc.situacao_1_cumprida = True
-    plc.situacao_2_cumprida = True
-    plc.situacao_3_cumprida = True
-    plc.situacao_4_cumprida = True
-    nota = plc.calcular_nota_senai()
-    ok5 = (nota == 10.0)
+    # Teste 5: Segurança e Interrupção Imediata (NR-12)
+    plc = PLCS71200Elevador()
+    plc.fim_de_curso_da_cabine_1 = False
+    plc.fim_de_curso_da_cabine_2 = True
+    plc.fim_de_curso_da_porta_1 = True
+    plc.fim_de_curso_da_porta_2 = True
+    plc.scan_cycle()
+
+    plc.botao_sobe_1 = True
+    plc.scan_cycle()
+    plc.botao_sobe_1 = False
+    plc.scan_cycle()
+    em_movimento = plc.motor_1_sobe
+
+    # Simula abertura da porta durante o deslocamento
+    plc.fim_de_curso_da_cabine_1 = True
+    plc.fim_de_curso_da_porta_1 = False
+    plc.scan_cycle()
+    parou_emergencia = (not plc.motor_1_sobe and not plc.motor_1_desce)
+
+    ok5 = em_movimento and parou_emergencia
     if ok5: passed_count += 1
     print_step(
-        5, "Rubrica Completa SENAI (Nota Máxima 10,0)",
-        "Valida cálculo de pontuação máxima conforme tabela oficial de critérios da avaliação.",
-        ok5, [f"Nota calculada: {nota:.1f} / 10.0 (Conceito A em todas as 4 etapas)"]
+        5, "Intertravamento de Segurança NR-12 (Porta Aberta)",
+        "Garante parada instantânea do motor caso qualquer porta seja aberta durante o movimento.",
+        ok5, [f"Em movimento: {em_movimento} | Parada Imediata: {parou_emergencia}"]
     )
 
     print(f"{CYAN}{BOLD}{'=' * 78}{RESET}")
@@ -168,10 +182,6 @@ def main():
         win.plc.motor_1_sobe = True
         win.plc.tranca_magnetica_da_porta_1 = True
         win.plc.tranca_magnetica_da_porta_2 = True
-        win.plc.situacao_1_cumprida = True
-        win.plc.situacao_2_cumprida = True
-        win.plc.situacao_3_cumprida = True
-        win.plc.situacao_4_cumprida = True
         win._simulation_step()
         
         pix = win.grab()
