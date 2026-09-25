@@ -34,7 +34,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run automated unit tests
-        run: pytest tests/
+        run: python -m pytest tests/
 
       - name: Build standalone executable with PyInstaller
         run: python -m PyInstaller simulador_elevador.spec --noconfirm --clean
