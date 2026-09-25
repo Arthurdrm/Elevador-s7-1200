@@ -12,11 +12,12 @@ Projeto completo de automação industrial, segurança operacional (NR-12) e sim
 
 ## 🚀 Download do Executável do Simulador (Windows)
 
-[![Download .exe](https://img.shields.io/badge/Download-Simulador__Elevador__S7--1200.exe-007ACC?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Arthurdrm/Elevador-s7-1200/releases/download/v1.0.0/Simulador_Elevador_S7_1200.exe)
+[![Download .exe](https://img.shields.io/badge/Download-Simulador__Elevador__S7--1200.exe-007ACC?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/Arthurdrm/Elevador-s7-1200/releases/download/v1.0.1/Simulador_Elevador_S7_1200.exe)
 [![Release](https://img.shields.io/github/v/release/Arthurdrm/Elevador-s7-1200?style=for-the-badge&color=green)](https://github.com/Arthurdrm/Elevador-s7-1200/releases/latest)
 
 > 💡 **Pronto para rodar — Não precisa instalar Python nem configurar nada!**  
-> Baixe o `Simulador_Elevador_S7_1200.exe` e execute diretamente em qualquer computador com Windows 10/11.
+> Baixe o `Simulador_Elevador_S7_1200.exe` pelo botão acima ou pegue diretamente na pasta local [`dist/Simulador_Elevador_S7_1200.exe`](dist/Simulador_Elevador_S7_1200.exe).
+> Compatível com Windows 10 e Windows 11 (64-bit).
 
 ---
 
