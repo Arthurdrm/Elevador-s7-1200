@@ -1,0 +1,176 @@
+FUNCTION_BLOCK "FB_Controle_Elevador"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      i_Botao_sobe_1 : Bool;             // %I0.0 - Botão NA de subida no 1º pavimento
+      i_Botao_desce_1 : Bool;            // %I0.1 - Botão NA de descida no 1º pavimento
+      i_Fim_de_curso_da_cabine_1 : Bool; // %I0.2 - Chave NF cabine no 1º pav (Abre=0 ao acionar)
+      i_Fim_de_curso_da_porta_1 : Bool;  // %I0.3 - Chave NA porta 1 (Fecha=1 quando fechada)
+      i_Botao_sobe_2 : Bool;             // %I0.4 - Botão NA de subida no 2º pavimento
+      i_Botao_desce_2 : Bool;            // %I0.5 - Botão NA de descida no 2º pavimento
+      i_Fim_de_curso_da_cabine_2 : Bool; // %I0.6 - Chave NF cabine no 2º pav (Abre=0 ao acionar)
+      i_Fim_de_curso_da_porta_2 : Bool;  // %I0.7 - Chave NA porta 2 (Fecha=1 quando fechada)
+   END_VAR
+
+   VAR_OUTPUT 
+      q_Motor_1_sobe : Bool;             // %Q0.0 - Motor sentido horário (Subir)
+      q_Motor_1_desce : Bool;            // %Q0.1 - Motor sentido anti-horário (Descer)
+      q_Tranca_magnetica_da_porta_1 : Bool; // %Q0.2 - Tranca magnética porta 1 (1=Trancada)
+      q_Tranca_magnetica_da_porta_2 : Bool; // %Q0.3 - Tranca magnética porta 2 (1=Trancada)
+   END_VAR
+
+   VAR 
+      // Memórias estáticas internas (STAT)
+      stat_subindo : Bool;
+      stat_descendo : Bool;
+      stat_cabine_andar_1 : Bool;
+      stat_cabine_andar_2 : Bool;
+      stat_portas_fechadas : Bool;
+      
+      // Detecção de bordas
+      stat_b1_sobe_ant : Bool;
+      stat_b1_desce_ant : Bool;
+      stat_b2_sobe_ant : Bool;
+      stat_b2_desce_ant : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      pulso_sobe_1 : Bool;
+      pulso_desce_1 : Bool;
+      pulso_sobe_2 : Bool;
+      pulso_desce_2 : Bool;
+      cmd_solicitar_subida : Bool;
+      cmd_solicitar_descida : Bool;
+   END_VAR
+
+BEGIN
+   // =========================================================================
+   // ETAPA 1: TRATAMENTO E LEITURA DOS SENSORES (NORMATIZAÇÃO FÍSICA)
+   // =========================================================================
+   // Conforme especificação técnica SENAI:
+   // - Fim de curso da cabine possui contato NF:
+   //   Sem cabine = Contato Fechado (Sinal 24V = 1).
+   //   Cabine posicionada no andar = Mecanismo aciona fim de curso, abrindo o contato (Sinal 0V = 0).
+   #stat_cabine_andar_1 := NOT #i_Fim_de_curso_da_cabine_1;
+   #stat_cabine_andar_2 := NOT #i_Fim_de_curso_da_cabine_2;
+
+   // - Fim de curso das portas possui contato NA:
+   //   Porta aberta = Contato Aberto (Sinal 0V = 0).
+   //   Porta fechada = Contato Fecha (Sinal 24V = 1).
+   // Condição de Segurança Mandatória: Ambos os pavimentos com portas fechadas
+   #stat_portas_fechadas := #i_Fim_de_curso_da_porta_1 AND #i_Fim_de_curso_da_porta_2;
+
+   // =========================================================================
+   // ETAPA 2: DETECÇÃO DE BORDAS DE SUBIDA DOS BOTÕES DE COMANDO (NA)
+   // =========================================================================
+   #pulso_sobe_1  := #i_Botao_sobe_1  AND NOT #stat_b1_sobe_ant;
+   #pulso_desce_1 := #i_Botao_desce_1 AND NOT #stat_b1_desce_ant;
+   #pulso_sobe_2  := #i_Botao_sobe_2  AND NOT #stat_b2_sobe_ant;
+   #pulso_desce_2 := #i_Botao_desce_2 AND NOT #stat_b2_desce_ant;
+
+   #stat_b1_sobe_ant  := #i_Botao_sobe_1;
+   #stat_b1_desce_ant := #i_Botao_desce_1;
+   #stat_b2_sobe_ant  := #i_Botao_sobe_2;
+   #stat_b2_desce_ant := #i_Botao_desce_2;
+
+   // =========================================================================
+   // ETAPA 3: AVALIAÇÃO DAS SITUAÇÕES OPERACIONAIS DO DESAFIO SENAI
+   // =========================================================================
+   // Situação 1 & 3: Comandos de Subida
+   // - Permitido se: Cabine no 1º andar AND Portas fechadas AND Não está descendo
+   // - Ignora se já estiver no 2º andar (Situação 2)
+   #cmd_solicitar_subida := (#pulso_sobe_1 OR #pulso_sobe_2) 
+                            AND #stat_cabine_andar_1 
+                            AND #stat_portas_fechadas 
+                            AND NOT #stat_descendo;
+
+   // Situação 2 & 4: Comandos de Descida
+   // - Permitido se: Cabine no 2º andar AND Portas fechadas AND Não está subindo
+   // - Ignora se já estiver no 1º andar (Situação 1)
+   #cmd_solicitar_descida := (#pulso_desce_1 OR #pulso_desce_2) 
+                             AND #stat_cabine_andar_2 
+                             AND #stat_portas_fechadas 
+                             AND NOT #stat_subindo;
+
+   // =========================================================================
+   // ETAPA 4: CIRCUITO DE RETENÇÃO (SELO) E INTERTRAVAMENTO DO MOTOR
+   // =========================================================================
+   // Controle do Motor de Subida (%Q0.0):
+   // Liga se: Comando válido de subida.
+   // Mantém ligado (selo) ENQUANTO: 
+   // 1. Portas continuarem fechadas (se abrir qualquer porta, para imediatamente)
+   // 2. Não tiver atingido o 2º andar (fim de curso cabine 2)
+   // 3. Intertravamento elétrico: Motor de descida deve estar desligado
+   IF #cmd_solicitar_subida THEN
+       #stat_subindo := TRUE;
+   END_IF;
+
+   IF #stat_subindo THEN
+       // Condições de desliga / parada de subida
+       IF (NOT #stat_portas_fechadas) OR #stat_cabine_andar_2 OR #stat_descendo THEN
+           #stat_subindo := FALSE;
+       END_IF;
+   END_IF;
+
+   // Controle do Motor de Descida (%Q0.1):
+   // Liga se: Comando válido de descida.
+   // Mantém ligado (selo) ENQUANTO:
+   // 1. Portas continuarem fechadas
+   // 2. Não tiver atingido o 1º andar (fim de curso cabine 1)
+   // 3. Intertravamento elétrico: Motor de subida deve estar desligado
+   IF #cmd_solicitar_descida THEN
+       #stat_descendo := TRUE;
+   END_IF;
+
+   IF #stat_descendo THEN
+       // Condições de desliga / parada de descida
+       IF (NOT #stat_portas_fechadas) OR #stat_cabine_andar_1 OR #stat_subindo THEN
+           #stat_descendo := FALSE;
+       END_IF;
+   END_IF;
+
+   // Atribuição direta às saídas físicas com intertravamento cruzado de hardware
+   #q_Motor_1_sobe  := #stat_subindo AND NOT #stat_descendo;
+   #q_Motor_1_desce := #stat_descendo AND NOT #stat_subindo;
+
+   // =========================================================================
+   // ETAPA 5: CONTROLE DE SEGURANÇA DAS TRANCAS MAGNÉTICAS (%Q0.2 e %Q0.3)
+   // =========================================================================
+   // Requisitos mandatórios do instrumento:
+   // 1. "Enquanto o motor estiver deslocando a cabine, as duas portas deverão 
+   //     permanecer trancadas, por meio das chaves magnéticas."
+   // 2. "O destravamento da porta só poderá ocorrer se a cabine estiver posicionada no andar."
+   // 3. "Ao chegar no pavimento superior, as portas desse pavimento deverão ser destrancadas."
+   // 4. "Ao chegar no pavimento inferior, as portas desse pavimento deverão ser destrancadas."
+   //
+   // Lógica da Tranca da Porta 1 (%Q0.2):
+   // Fica TRANCADA (TRUE) se:
+   // - O elevador estiver em movimento (subindo ou descendo) OU
+   // - A cabine NÃO estiver posicionada no 1º pavimento.
+   // Fica DESTRANCADA (FALSE) se e somente se:
+   // - O elevador estiver totalmente parado no 1º pavimento.
+   IF (#q_Motor_1_sobe OR #q_Motor_1_desce) THEN
+       #q_Tranca_magnetica_da_porta_1 := TRUE;
+       #q_Tranca_magnetica_da_porta_2 := TRUE;
+   ELSE
+       // Parado: Destranca apenas a porta do pavimento onde a cabine está
+       #q_Tranca_magnetica_da_porta_1 := NOT #stat_cabine_andar_1;
+       #q_Tranca_magnetica_da_porta_2 := NOT #stat_cabine_andar_2;
+   END_IF;
+
+   // =========================================================================
+   // ETAPA 6: ATUALIZAÇÃO DO BLOCO DE DADOS GLOBAL (DB_Elevador)
+   // =========================================================================
+   "DB_Elevador".Status.Cabine_No_Andar_1    := #stat_cabine_andar_1;
+   "DB_Elevador".Status.Cabine_No_Andar_2    := #stat_cabine_andar_2;
+   "DB_Elevador".Status.Cabine_Entre_Andares := NOT #stat_cabine_andar_1 AND NOT #stat_cabine_andar_2;
+   "DB_Elevador".Status.Portas_Fechadas      := #stat_portas_fechadas;
+   "DB_Elevador".Status.Porta_1_Fechada      := #i_Fim_de_curso_da_porta_1;
+   "DB_Elevador".Status.Porta_2_Fechada      := #i_Fim_de_curso_da_porta_2;
+   "DB_Elevador".Status.Em_Movimento         := #q_Motor_1_sobe OR #q_Motor_1_desce;
+   "DB_Elevador".Status.Subindo              := #q_Motor_1_sobe;
+   "DB_Elevador".Status.Descendo             := #q_Motor_1_desce;
+   "DB_Elevador".Status.Porta_1_Trancada     := #q_Tranca_magnetica_da_porta_1;
+   "DB_Elevador".Status.Porta_2_Trancada     := #q_Tranca_magnetica_da_porta_2;
+
+END_FUNCTION_BLOCK

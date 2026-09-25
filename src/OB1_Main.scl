@@ -1,0 +1,29 @@
+ORGANIZATION_BLOCK "Main"
+TITLE = "Ciclo Principal de Varredura - Elevador de Carga S7-1200"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+   END_VAR
+
+BEGIN
+   // =========================================================================
+   // CHAMADA DO BLOCO DE CONTROLE DO ELEVADOR (FB_Controle_Elevador)
+   // MAPEANDO DIRETAMENTE AS ENTRADAS E SAÍDAS FÍSICAS DA TABELA DE I/O SENAI
+   // =========================================================================
+   "InstFB_Controle_Elevador"(
+       i_Botao_sobe_1             := "Botao_sobe_1",             // %I0.0
+       i_Botao_desce_1            := "Botao_desce_1",            // %I0.1
+       i_Fim_de_curso_da_cabine_1 := "Fim_de_curso_da_cabine_1", // %I0.2 (NF)
+       i_Fim_de_curso_da_porta_1  := "Fim_de_curso_da_porta_1",  // %I0.3 (NA)
+       i_Botao_sobe_2             := "Botao_sobe_2",             // %I0.4
+       i_Botao_desce_2            := "Botao_desce_2",            // %I0.5
+       i_Fim_de_curso_da_cabine_2 := "Fim_de_curso_da_cabine_2", // %I0.6 (NF)
+       i_Fim_de_curso_da_porta_2  := "Fim_de_curso_da_porta_2",  // %I0.7 (NA)
+       
+       q_Motor_1_sobe             => "Motor_1_sobe",             // %Q0.0
+       q_Motor_1_desce            => "Motor_1_desce",            // %Q0.1
+       q_Tranca_magnetica_da_porta_1 => "Tranca_magnetica_da_porta_1", // %Q0.2
+       q_Tranca_magnetica_da_porta_2 => "Tranca_magnetica_da_porta_2"  // %Q0.3
+   );
+
+END_ORGANIZATION_BLOCK

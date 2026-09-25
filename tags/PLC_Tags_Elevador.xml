@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V17" />
+  <SW.Tags.PlcTagTable ID="0">
+    <AttributeList>
+      <Name>Tags_Elevador</Name>
+    </AttributeList>
+    <ObjectList>
+      <SW.Tags.PlcTag ID="1" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.0</LogicalAddress>
+          <Name>Botao_sobe_1</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Botão de impulso contato N.O. painel de comando no 1º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="2" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.1</LogicalAddress>
+          <Name>Botao_desce_1</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Botão de impulso contato N.O. painel de comando no 1º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="3" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.2</LogicalAddress>
+          <Name>Fim_de_curso_da_cabine_1</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Chave fim de curso contato N.C. posição da cabine no 1º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="4" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.3</LogicalAddress>
+          <Name>Fim_de_curso_da_porta_1</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Chave fim de curso contato N.O. posição da porta no 1º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="5" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.4</LogicalAddress>
+          <Name>Botao_sobe_2</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Botão de impulso contato N.O. painel de comando no 2º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="6" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.5</LogicalAddress>
+          <Name>Botao_desce_2</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Botão de impulso contato N.O. painel de comando no 2º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="7" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.6</LogicalAddress>
+          <Name>Fim_de_curso_da_cabine_2</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Chave fim de curso contato N.C. posição da cabine no 2º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="8" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%I0.7</LogicalAddress>
+          <Name>Fim_de_curso_da_porta_2</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Chave fim de curso contato N.O. posição da porta no 2º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="9" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%Q0.0</LogicalAddress>
+          <Name>Motor_1_sobe</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Motor com sentido de rotação para subir a cabine (horário)</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="10" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%Q0.1</LogicalAddress>
+          <Name>Motor_1_desce</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Motor com sentido de rotação para descer a cabine (anti-horário)</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="11" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%Q0.2</LogicalAddress>
+          <Name>Tranca_magnetica_da_porta_1</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Tranca magnética da porta do 1º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+      <SW.Tags.PlcTag ID="12" CompositionName="Tags">
+        <AttributeList>
+          <DataTypeName>Bool</DataTypeName>
+          <LogicalAddress>%Q0.3</LogicalAddress>
+          <Name>Tranca_magnetica_da_porta_2</Name>
+          <Comment><MultiLanguageText Lang="pt-BR">Tranca magnética da porta do 2º pavimento</MultiLanguageText></Comment>
+        </AttributeList>
+      </SW.Tags.PlcTag>
+    </ObjectList>
+  </SW.Tags.PlcTagTable>
+</Document>

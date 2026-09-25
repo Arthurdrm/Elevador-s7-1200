@@ -1,0 +1,197 @@
+// ============================================================================
+// PROJETO SENAI - SISTEMAS LÓGICOS PROGRAMÁVEIS
+// DESAFIO INDUSTRIAL 3: CONTROLE DE ELEVADOR DE CARGA EM S7-1200
+// AUTOCONTROL / EDIFICAÇÃO DE DOIS PAVIMENTOS
+// ============================================================================
+
+DATA_BLOCK "DB_Elevador"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Status : Struct
+         Cabine_No_Andar_1 : Bool;       // Cabine detectada no 1º pavimento
+         Cabine_No_Andar_2 : Bool;       // Cabine detectada no 2º pavimento
+         Cabine_Entre_Andares : Bool;    // Cabine em trânsito vertical
+         Portas_Fechadas : Bool;         // Condição de segurança: ambas as portas fechadas
+         Porta_1_Fechada : Bool;         // Fim de curso porta 1 atuado
+         Porta_2_Fechada : Bool;         // Fim de curso porta 2 atuado
+         Em_Movimento : Bool;            // Motor ativo (subindo ou descendo)
+         Subindo : Bool;                 // Motor acionado para subir (horário)
+         Descendo : Bool;                // Motor acionado para descer (anti-horário)
+         Porta_1_Trancada : Bool;        // Tranca magnética 1 ativada
+         Porta_2_Trancada : Bool;        // Tranca magnética 2 ativada
+         Falha_Intertravamento : Bool;   // Tentativa de acionamento simultâneo
+      END_STRUCT;
+      Comandos : Struct
+         Pulso_Sobe_1 : Bool;            // Pulso registrado no botão sobe 1
+         Pulso_Desce_1 : Bool;           // Pulso registrado no botão desce 1
+         Pulso_Sobe_2 : Bool;            // Pulso registrado no botão sobe 2
+         Pulso_Desce_2 : Bool;           // Pulso registrado no botão desce 2
+         Solicitacao_Subida : Bool;      // Memória de solicitação de subida
+         Solicitacao_Descida : Bool;     // Memória de solicitação de descida
+         Reset_Geral : Bool;             // Reset de memórias
+      END_STRUCT;
+      Diagnostico : Struct
+         Total_Viagens_Subida : DInt;    // Contador de viagens concluídas subindo
+         Total_Viagens_Descida : DInt;   // Contador de viagens concluídas descendo
+         Tentativas_Invalidas : DInt;    // Comandos ignorados por segurança
+      END_STRUCT;
+   END_VAR
+
+BEGIN
+END_DATA_BLOCK
+
+// ============================================================================
+// BLOCO DE FUNÇÃO PRINCIPAL: FB_Controle_Elevador
+// ============================================================================
+FUNCTION_BLOCK "FB_Controle_Elevador"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_INPUT 
+      i_Botao_sobe_1 : Bool;             // %I0.0 - Botão NA de subida no 1º pavimento
+      i_Botao_desce_1 : Bool;            // %I0.1 - Botão NA de descida no 1º pavimento
+      i_Fim_de_curso_da_cabine_1 : Bool; // %I0.2 - Chave NF cabine no 1º pav (Abre=0 ao acionar)
+      i_Fim_de_curso_da_porta_1 : Bool;  // %I0.3 - Chave NA porta 1 (Fecha=1 quando fechada)
+      i_Botao_sobe_2 : Bool;             // %I0.4 - Botão NA de subida no 2º pavimento
+      i_Botao_desce_2 : Bool;            // %I0.5 - Botão NA de descida no 2º pavimento
+      i_Fim_de_curso_da_cabine_2 : Bool; // %I0.6 - Chave NF cabine no 2º pav (Abre=0 ao acionar)
+      i_Fim_de_curso_da_porta_2 : Bool;  // %I0.7 - Chave NA porta 2 (Fecha=1 quando fechada)
+   END_VAR
+
+   VAR_OUTPUT 
+      q_Motor_1_sobe : Bool;             // %Q0.0 - Motor sentido horário (Subir)
+      q_Motor_1_desce : Bool;            // %Q0.1 - Motor sentido anti-horário (Descer)
+      q_Tranca_magnetica_da_porta_1 : Bool; // %Q0.2 - Tranca magnética porta 1 (1=Trancada)
+      q_Tranca_magnetica_da_porta_2 : Bool; // %Q0.3 - Tranca magnética porta 2 (1=Trancada)
+   END_VAR
+
+   VAR 
+      // Memórias estáticas internas (STAT)
+      stat_subindo : Bool;
+      stat_descendo : Bool;
+      stat_cabine_andar_1 : Bool;
+      stat_cabine_andar_2 : Bool;
+      stat_portas_fechadas : Bool;
+      
+      // Detecção de bordas
+      stat_b1_sobe_ant : Bool;
+      stat_b1_desce_ant : Bool;
+      stat_b2_sobe_ant : Bool;
+      stat_b2_desce_ant : Bool;
+   END_VAR
+
+   VAR_TEMP 
+      pulso_sobe_1 : Bool;
+      pulso_desce_1 : Bool;
+      pulso_sobe_2 : Bool;
+      pulso_desce_2 : Bool;
+      cmd_solicitar_subida : Bool;
+      cmd_solicitar_descida : Bool;
+   END_VAR
+
+BEGIN
+   // 1. TRATAMENTO E LEITURA DOS SENSORES FÍSICOS
+   #stat_cabine_andar_1 := NOT #i_Fim_de_curso_da_cabine_1;
+   #stat_cabine_andar_2 := NOT #i_Fim_de_curso_da_cabine_2;
+   #stat_portas_fechadas := #i_Fim_de_curso_da_porta_1 AND #i_Fim_de_curso_da_porta_2;
+
+   // 2. DETECÇÃO DE BORDAS DOS BOTÕES
+   #pulso_sobe_1  := #i_Botao_sobe_1  AND NOT #stat_b1_sobe_ant;
+   #pulso_desce_1 := #i_Botao_desce_1 AND NOT #stat_b1_desce_ant;
+   #pulso_sobe_2  := #i_Botao_sobe_2  AND NOT #stat_b2_sobe_ant;
+   #pulso_desce_2 := #i_Botao_desce_2 AND NOT #stat_b2_desce_ant;
+
+   #stat_b1_sobe_ant  := #i_Botao_sobe_1;
+   #stat_b1_desce_ant := #i_Botao_desce_1;
+   #stat_b2_sobe_ant  := #i_Botao_sobe_2;
+   #stat_b2_desce_ant := #i_Botao_desce_2;
+
+   // 3. ANÁLISE DE CONDIÇÕES DE PARTIDA (SITUAÇÕES 1, 2, 3 E 4)
+   #cmd_solicitar_subida := (#pulso_sobe_1 OR #pulso_sobe_2) 
+                            AND #stat_cabine_andar_1 
+                            AND #stat_portas_fechadas 
+                            AND NOT #stat_descendo;
+
+   #cmd_solicitar_descida := (#pulso_desce_1 OR #pulso_desce_2) 
+                             AND #stat_cabine_andar_2 
+                             AND #stat_portas_fechadas 
+                             AND NOT #stat_subindo;
+
+   // 4. SELO E INTERTRAVAMENTO MOTOR DE SUBIDA (%Q0.0)
+   IF #cmd_solicitar_subida THEN
+       #stat_subindo := TRUE;
+   END_IF;
+
+   IF #stat_subindo THEN
+       IF (NOT #stat_portas_fechadas) OR #stat_cabine_andar_2 OR #stat_descendo THEN
+           #stat_subindo := FALSE;
+       END_IF;
+   END_IF;
+
+   // 5. SELO E INTERTRAVAMENTO MOTOR DE DESCIDA (%Q0.1)
+   IF #cmd_solicitar_descida THEN
+       #stat_descendo := TRUE;
+   END_IF;
+
+   IF #stat_descendo THEN
+       IF (NOT #stat_portas_fechadas) OR #stat_cabine_andar_1 OR #stat_subindo THEN
+           #stat_descendo := FALSE;
+       END_IF;
+   END_IF;
+
+   // Saídas com intertravamento cruzado
+   #q_Motor_1_sobe  := #stat_subindo AND NOT #stat_descendo;
+   #q_Motor_1_desce := #stat_descendo AND NOT #stat_subindo;
+
+   // 6. CONTROLE DAS TRANCAS MAGNÉTICAS (%Q0.2 e %Q0.3)
+   IF (#q_Motor_1_sobe OR #q_Motor_1_desce) THEN
+       #q_Tranca_magnetica_da_porta_1 := TRUE;
+       #q_Tranca_magnetica_da_porta_2 := TRUE;
+   ELSE
+       #q_Tranca_magnetica_da_porta_1 := NOT #stat_cabine_andar_1;
+       #q_Tranca_magnetica_da_porta_2 := NOT #stat_cabine_andar_2;
+   END_IF;
+
+   // 7. SINCRONIZAÇÃO COM O BLOCO DE DADOS GLOBAL
+   "DB_Elevador".Status.Cabine_No_Andar_1    := #stat_cabine_andar_1;
+   "DB_Elevador".Status.Cabine_No_Andar_2    := #stat_cabine_andar_2;
+   "DB_Elevador".Status.Cabine_Entre_Andares := NOT #stat_cabine_andar_1 AND NOT #stat_cabine_andar_2;
+   "DB_Elevador".Status.Portas_Fechadas      := #stat_portas_fechadas;
+   "DB_Elevador".Status.Porta_1_Fechada      := #i_Fim_de_curso_da_porta_1;
+   "DB_Elevador".Status.Porta_2_Fechada      := #i_Fim_de_curso_da_porta_2;
+   "DB_Elevador".Status.Em_Movimento         := #q_Motor_1_sobe OR #q_Motor_1_desce;
+   "DB_Elevador".Status.Subindo              := #q_Motor_1_sobe;
+   "DB_Elevador".Status.Descendo             := #q_Motor_1_desce;
+   "DB_Elevador".Status.Porta_1_Trancada     := #q_Tranca_magnetica_da_porta_1;
+   "DB_Elevador".Status.Porta_2_Trancada     := #q_Tranca_magnetica_da_porta_2;
+
+END_FUNCTION_BLOCK
+
+// ============================================================================
+// BLOCO DE ORGANIZAÇÃO: OB1 - Main
+// ============================================================================
+ORGANIZATION_BLOCK "Main"
+TITLE = "Ciclo Principal de Varredura - Elevador S7-1200"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+   VAR_TEMP 
+   END_VAR
+
+BEGIN
+   "InstFB_Controle_Elevador"(
+       i_Botao_sobe_1             := "Botao_sobe_1",
+       i_Botao_desce_1            := "Botao_desce_1",
+       i_Fim_de_curso_da_cabine_1 := "Fim_de_curso_da_cabine_1",
+       i_Fim_de_curso_da_porta_1  := "Fim_de_curso_da_porta_1",
+       i_Botao_sobe_2             := "Botao_sobe_2",
+       i_Botao_desce_2            := "Botao_desce_2",
+       i_Fim_de_curso_da_cabine_2 := "Fim_de_curso_da_cabine_2",
+       i_Fim_de_curso_da_porta_2  := "Fim_de_curso_da_porta_2",
+       
+       q_Motor_1_sobe             => "Motor_1_sobe",
+       q_Motor_1_desce            => "Motor_1_desce",
+       q_Tranca_magnetica_da_porta_1 => "Tranca_magnetica_da_porta_1",
+       q_Tranca_magnetica_da_porta_2 => "Tranca_magnetica_da_porta_2"
+   );
+END_ORGANIZATION_BLOCK

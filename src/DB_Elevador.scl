@@ -1,0 +1,37 @@
+DATA_BLOCK "DB_Elevador"
+{ S7_Optimized_Access := 'TRUE' }
+VERSION : 0.1
+NON_RETAIN
+   VAR 
+      Status : Struct
+         Cabine_No_Andar_1 : Bool;       // Cabine detectada no 1º pavimento
+         Cabine_No_Andar_2 : Bool;       // Cabine detectada no 2º pavimento
+         Cabine_Entre_Andares : Bool;    // Cabine em trânsito vertical
+         Portas_Fechadas : Bool;         // Condição de segurança: ambas as portas fechadas
+         Porta_1_Fechada : Bool;         // Fim de curso porta 1 atuado
+         Porta_2_Fechada : Bool;         // Fim de curso porta 2 atuado
+         Em_Movimento : Bool;            // Motor ativo (subindo ou descendo)
+         Subindo : Bool;                 // Motor acionado para subir (horário)
+         Descendo : Bool;                // Motor acionado para descer (anti-horário)
+         Porta_1_Trancada : Bool;        // Tranca magnética 1 ativada
+         Porta_2_Trancada : Bool;        // Tranca magnética 2 ativada
+         Falha_Intertravamento : Bool;   // Tentativa de acionamento simultâneo
+      END_STRUCT;
+      Comandos : Struct
+         Pulso_Sobe_1 : Bool;            // Pulso registrado no botão sobe 1
+         Pulso_Desce_1 : Bool;           // Pulso registrado no botão desce 1
+         Pulso_Sobe_2 : Bool;            // Pulso registrado no botão sobe 2
+         Pulso_Desce_2 : Bool;           // Pulso registrado no botão desce 2
+         Solicitacao_Subida : Bool;      // Memória de solicitação de subida
+         Solicitacao_Descida : Bool;     // Memória de solicitação de descida
+         Reset_Geral : Bool;             // Reset de memórias
+      END_STRUCT;
+      Diagnostico : Struct
+         Total_Viagens_Subida : DInt;    // Contador de viagens concluídas subindo
+         Total_Viagens_Descida : DInt;   // Contador de viagens concluídas descendo
+         Tentativas_Invalidas : DInt;    // Comandos ignorados por segurança
+      END_STRUCT;
+   END_VAR
+
+BEGIN
+END_DATA_BLOCK
