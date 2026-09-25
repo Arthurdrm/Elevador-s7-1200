@@ -73,7 +73,7 @@ Para melhorar a logística interna e o fluxo de matérias-primas pesadas, foi in
 
 ---
 
-## 4. Requisitos de Operação e Segurança (Desafio 3 SENAI)
+## 4. Requisitos de Operação e Segurança Industrial (NR-12)
 
 1. **Condição Mandatória de Movimentação:**
    - O motor de tração (%Q0.0 ou %Q0.1) **SOMENTE** pode ser acionado se ambas as portas estiverem devidamente fechadas:
@@ -88,8 +88,8 @@ Para melhorar a logística interna e o fluxo de matérias-primas pesadas, foi in
    - **Cabine parada no 1º Andar:** Porta 1 destrancada (`%Q0.2 = 0`), Porta 2 trancada (`%Q0.3 = 1`).
    - **Cabine parada no 2º Andar:** Porta 2 destrancada (`%Q0.3 = 0`), Porta 1 trancada (`%Q0.2 = 1`).
 
-4. **Matriz das 4 Situações da Avaliação:**
-   - **Situação 1:** Elevador parado no piso 1. Ao apertar `Botao_desce_1`, nada acontece. Porta 1 permanece destrancada. Ao fechar portas e apertar `Botao_sobe_1`, o elevador sobe para o 2º andar.
-   - **Situação 2:** Elevador parado no piso 2. Ao apertar `Botao_sobe_2`, nada acontece. Porta 2 permanece destrancada. Ao fechar portas e apertar `Botao_desce_2`, o elevador desce para o 1º andar.
-   - **Situação 3:** Elevador no piso 1. Chamada realizada no piso 2 via `Botao_sobe_2`. Elevador sobe e, ao atingir o piso 2, a porta 2 é destrancada.
-   - **Situação 4:** Elevador no piso 2. Chamada realizada no piso 1 via `Botao_desce_1`. Elevador desce e, ao atingir o piso 1, a porta 1 é destrancada.
+4. **Matriz dos 4 Modos Operacionais:**
+   - **Modo 1 (Comando no 1º Piso):** Elevador parado no piso 1. Ao apertar `Botao_desce_1`, nada acontece. Porta 1 permanece destrancada. Ao fechar portas e apertar `Botao_sobe_1`, o elevador sobe para o 2º andar.
+   - **Modo 2 (Comando no 2º Piso):** Elevador parado no piso 2. Ao apertar `Botao_sobe_2`, nada acontece. Porta 2 permanece destrancada. Ao fechar portas e apertar `Botao_desce_2`, o elevador desce para o 1º andar.
+   - **Modo 3 (Chamada Externa para o 2º Piso):** Elevador no piso 1. Chamada realizada no piso 2 via `Botao_sobe_2`. Elevador sobe e, ao atingir o piso 2, a porta 2 é destrancada.
+   - **Modo 4 (Chamada Externa para o 1º Piso):** Elevador no piso 2. Chamada realizada no piso 1 via `Botao_desce_1`. Elevador desce e, ao atingir o piso 1, a porta 1 é destrancada.

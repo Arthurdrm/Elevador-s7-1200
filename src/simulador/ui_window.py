@@ -339,7 +339,7 @@ class MainWindowSimuladorElevador(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("SENAI - Simulador Interativo do Elevador S7-1200 (AutoControl)")
+        self.setWindowTitle("Simulador do Elevador Industrial S7-1200 - AutoControl")
         self.resize(1200, 820)
         self.setMinimumSize(1080, 720)
 
@@ -351,11 +351,6 @@ class MainWindowSimuladorElevador(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._simulation_step)
         self.last_time = time.time()
-
-        # Sequência de teste automático
-        self.auto_test_active: bool = False
-        self.auto_test_step: int = 0
-        self.auto_test_timer: float = 0.0
 
         self._init_ui()
         self._apply_dark_theme()
@@ -393,7 +388,7 @@ class MainWindowSimuladorElevador(QMainWindow):
         main_layout.addWidget(left_box, stretch=5)
 
         # -------------------------------------------------------------
-        # COLUNA DIREITA: Comandos, Tabela de I/O e Rubrica SENAI
+        # COLUNA DIREITA: Comandos, Diagnóstico e Tabela de I/O
         # -------------------------------------------------------------
         right_panel = QWidget()
         right_layout = QVBoxLayout(right_panel)
@@ -443,41 +438,39 @@ class MainWindowSimuladorElevador(QMainWindow):
 
         right_layout.addWidget(ctrl_group)
 
-        # 2. Rubrica de Avaliação SENAI (Tempo Real)
-        rubrica_group = QGroupBox("RUBRICA DE AVALIAÇÃO PRÁTICA SENAI (DESAFIO 3)")
-        rubrica_layout = QVBoxLayout(rubrica_group)
+        # 2. Painel de Diagnóstico & Intertravamentos Operacionais
+        diag_group = QGroupBox("DIAGNÓSTICO OPERACIONAL & INTERTRAVAMENTOS (SCADA)")
+        diag_layout = QVBoxLayout(diag_group)
 
-        score_h = QHBoxLayout()
-        self.lbl_score = QLabel("Nota Prevista: 0.0 / 10.0")
-        self.lbl_score.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        self.lbl_score.setStyleSheet("color: #f1c40f;")
-        self.lbl_score.setMinimumWidth(210)
-        self.score_bar = QProgressBar()
-        self.score_bar.setRange(0, 100)
-        self.score_bar.setValue(0)
-        self.score_bar.setTextVisible(False)
-        self.score_bar.setFixedHeight(14)
+        diag_grid = QGridLayout()
+        diag_grid.setSpacing(6)
 
-        self.btn_auto_test = QPushButton("⚡ Rodar Demonstração das 4 Situações SENAI")
-        self.btn_auto_test.setStyleSheet("background-color: #27ae60; font-weight: bold; color: white;")
-        self.btn_auto_test.clicked.connect(self._start_auto_test)
+        self.lbl_diag_motor = QLabel("Motor / Contatores: PARADO (K1=0, K2=0)")
+        self.lbl_diag_motor.setStyleSheet("color: #a0c0e0; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
+        
+        self.lbl_diag_seguranca = QLabel("Segurança NR-12: OK (Portas Fechadas)")
+        self.lbl_diag_seguranca.setStyleSheet("color: #2ecc71; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
-        score_h.addWidget(self.lbl_score)
-        score_h.addWidget(self.score_bar)
-        score_h.addWidget(self.btn_auto_test)
-        rubrica_layout.addLayout(score_h)
+        self.lbl_diag_tranca1 = QLabel("Tranca 1: LIVRE (%Q0.2=0)")
+        self.lbl_diag_tranca1.setStyleSheet("color: #2ecc71; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
-        # Itens da Rubrica
-        self.lbl_sit1 = QLabel("○ 1ª Etapa (Situação 1): Controle no 1º pav (Desce bloqueia, Sobe parte) [2.5 pts]")
-        self.lbl_sit2 = QLabel("○ 2ª Etapa (Situação 2): Controle no 2º pav (Sobe bloqueia, Desce parte) [2.5 pts]")
-        self.lbl_sit3 = QLabel("○ 3ª Etapa (Situação 3): Chamada no 2º pav c/ elevador no 1º pav e destrancamento [2.5 pts]")
-        self.lbl_sit4 = QLabel("○ 4ª Etapa (Situação 4): Chamada no 1º pav c/ elevador no 2º pav e destrancamento [2.5 pts]")
-        for l in (self.lbl_sit1, self.lbl_sit2, self.lbl_sit3, self.lbl_sit4):
-            l.setFont(QFont("Segoe UI", 8))
-            l.setStyleSheet("color: #8898aa;")
-            rubrica_layout.addWidget(l)
+        self.lbl_diag_tranca2 = QLabel("Tranca 2: TRANCADA (%Q0.3=1)")
+        self.lbl_diag_tranca2.setStyleSheet("color: #e74c3c; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
-        right_layout.addWidget(rubrica_group)
+        diag_grid.addWidget(self.lbl_diag_motor, 0, 0)
+        diag_grid.addWidget(self.lbl_diag_seguranca, 0, 1)
+        diag_grid.addWidget(self.lbl_diag_tranca1, 1, 0)
+        diag_grid.addWidget(self.lbl_diag_tranca2, 1, 1)
+        diag_layout.addLayout(diag_grid)
+
+        reset_h = QHBoxLayout()
+        self.btn_reset_pos = QPushButton("🔄 Resetar Planta para Posição Inicial (1º Pavimento)")
+        self.btn_reset_pos.setStyleSheet("background-color: #2c3e50; color: #ecf0f1; font-weight: bold; padding: 6px;")
+        self.btn_reset_pos.clicked.connect(self._reset_position)
+        reset_h.addWidget(self.btn_reset_pos)
+        diag_layout.addLayout(reset_h)
+
+        right_layout.addWidget(diag_group)
 
         # 3. Tabela de I/O em Tempo Real
         io_group = QGroupBox("TABELA DE I/O DIGITAL DO CLP SIEMENS S7-1200")
@@ -554,21 +547,27 @@ class MainWindowSimuladorElevador(QMainWindow):
         t_str = time.strftime("%H:%M:%S")
         self.txt_log.append(f"[{t_str}] {msg}")
 
-    def _start_auto_test(self):
-        """Inicia demonstração automática das 4 situações exigidas no desafio."""
-        self.auto_test_active = True
-        self.auto_test_step = 1
-        self.auto_test_timer = 0.0
-        self._log("🎬 [DEMO] Iniciando ciclo de testes automáticos das 4 Situações SENAI...")
+    def _reset_position(self):
+        """Reinicializa a planta na condição padrão inicial (1º Pavimento)."""
+        self.physics.pos_y_m = 0.0
+        self.physics.door_1_open_ratio = 0.0
+        self.physics.door_2_open_ratio = 0.0
+        self.plc.stat_subindo = False
+        self.plc.stat_descendo = False
+        self.plc.motor_1_sobe = False
+        self.plc.motor_1_desce = False
+        self.plc.fim_de_curso_da_cabine_1 = False
+        self.plc.fim_de_curso_da_cabine_2 = True
+        self.plc.fim_de_curso_da_porta_1 = True
+        self.plc.fim_de_curso_da_porta_2 = True
+        self.plc.tranca_magnetica_da_porta_1 = False
+        self.plc.tranca_magnetica_da_porta_2 = True
+        self._log("🔄 [RESET] Elevador reinicializado na posição padrão (1º Pavimento).")
 
     def _simulation_step(self):
         now = time.time()
         dt = min(0.1, now - self.last_time)
         self.last_time = now
-
-        # Sequência automática de testes
-        if self.auto_test_active:
-            self._handle_auto_test(dt)
 
         # 1. Passo de Física
         fc1, fp1, fc2, fp2 = self.physics.step(
@@ -641,76 +640,37 @@ class MainWindowSimuladorElevador(QMainWindow):
                 item.setForeground(QColor(130, 140, 155))
                 item.setFont(QFont("Consolas", 9))
 
-        # 6. Atualiza Rubrica SENAI
-        nota = self.plc.calcular_nota_senai()
-        self.lbl_score.setText(f"Nota Prevista: {nota:.1f} / 10.0")
-        self.score_bar.setValue(int(nota * 10))
+        # 6. Atualiza Painel de Diagnóstico Operacional (SCADA)
+        if self.plc.motor_1_sobe:
+            self.lbl_diag_motor.setText("Motor / Contatores: SUBINDO (K1 ATIVO %Q0.0)")
+            self.lbl_diag_motor.setStyleSheet("color: #2ecc71; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
+        elif self.plc.motor_1_desce:
+            self.lbl_diag_motor.setText("Motor / Contatores: DESCENDO (K2 ATIVO %Q0.1)")
+            self.lbl_diag_motor.setStyleSheet("color: #e67e22; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
+        else:
+            self.lbl_diag_motor.setText("Motor / Contatores: PARADO (K1=0, K2=0)")
+            self.lbl_diag_motor.setStyleSheet("color: #a0c0e0; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
-        if self.plc.situacao_1_cumprida:
-            self.lbl_sit1.setText("✔ 1ª Etapa (Situação 1): Controle no 1º pav CONCLUÍDO [2.5 pts]")
-            self.lbl_sit1.setStyleSheet("color: #2ecc71; font-weight: bold;")
-        if self.plc.situacao_2_cumprida:
-            self.lbl_sit2.setText("✔ 2ª Etapa (Situação 2): Controle no 2º pav CONCLUÍDO [2.5 pts]")
-            self.lbl_sit2.setStyleSheet("color: #2ecc71; font-weight: bold;")
-        if self.plc.situacao_3_cumprida:
-            self.lbl_sit3.setText("✔ 3ª Etapa (Situação 3): Chamada no 2º pav c/ elevador no 1º pav CONCLUÍDO [2.5 pts]")
-            self.lbl_sit3.setStyleSheet("color: #2ecc71; font-weight: bold;")
-        if self.plc.situacao_4_cumprida:
-            self.lbl_sit4.setText("✔ 4ª Etapa (Situação 4): Chamada no 1º pav c/ elevador no 2º pav CONCLUÍDO [2.5 pts]")
-            self.lbl_sit4.setStyleSheet("color: #2ecc71; font-weight: bold;")
+        if not self.plc.stat_portas_fechadas:
+            self.lbl_diag_seguranca.setText("Segurança NR-12: BLOQUEADO (Porta Aberta)")
+            self.lbl_diag_seguranca.setStyleSheet("color: #e74c3c; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
+        else:
+            self.lbl_diag_seguranca.setText("Segurança NR-12: PRONTO (Portas Fechadas)")
+            self.lbl_diag_seguranca.setStyleSheet("color: #2ecc71; font-weight: bold; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
-    def _handle_auto_test(self, dt: float):
-        """Gerencia o autômato de teste das 4 situações."""
-        self.auto_test_timer += dt
+        if self.plc.tranca_magnetica_da_porta_1:
+            self.lbl_diag_tranca1.setText("Tranca 1: TRANCADA (%Q0.2=1)")
+            self.lbl_diag_tranca1.setStyleSheet("color: #e74c3c; background: #232730; padding: 4px 8px; border-radius: 4px;")
+        else:
+            self.lbl_diag_tranca1.setText("Tranca 1: LIVRE / DESTRANCADA (%Q0.2=0)")
+            self.lbl_diag_tranca1.setStyleSheet("color: #2ecc71; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
-        # Etapa 1: Situação 1 (Testa descer no 1º piso -> bloqueia. Em seguida testa sobe 1)
-        if self.auto_test_step == 1:
-            if self.auto_test_timer > 0.5 and self.auto_test_timer < 0.8:
-                self.plc.botao_desce_1 = True
-            elif self.auto_test_timer >= 0.8 and self.auto_test_timer < 1.4:
-                self.plc.botao_desce_1 = False
-            elif self.auto_test_timer >= 1.4 and self.auto_test_timer < 1.7:
-                self.plc.botao_sobe_1 = True
-            elif self.auto_test_timer >= 1.7:
-                self.plc.botao_sobe_1 = False
-                if self.physics.pos_y_m >= self.physics.course_height_m - 0.05:
-                    self.auto_test_step = 2
-                    self.auto_test_timer = 0.0
-
-        # Etapa 2: Situação 2 (No 2º piso, testa sobe 2 -> bloqueia. Em seguida testa desce 2)
-        elif self.auto_test_step == 2:
-            if self.auto_test_timer > 0.5 and self.auto_test_timer < 0.8:
-                self.plc.botao_sobe_2 = True
-            elif self.auto_test_timer >= 0.8 and self.auto_test_timer < 1.4:
-                self.plc.botao_sobe_2 = False
-            elif self.auto_test_timer >= 1.4 and self.auto_test_timer < 1.7:
-                self.plc.botao_desce_2 = True
-            elif self.auto_test_timer >= 1.7:
-                self.plc.botao_desce_2 = False
-                if self.physics.pos_y_m <= 0.05:
-                    self.auto_test_step = 3
-                    self.auto_test_timer = 0.0
-
-        # Etapa 3: Situação 3 (No 1º piso, chamada pelo botão sobe 2)
-        elif self.auto_test_step == 3:
-            if self.auto_test_timer > 0.8 and self.auto_test_timer < 1.2:
-                self.plc.botao_sobe_2 = True
-            elif self.auto_test_timer >= 1.2:
-                self.plc.botao_sobe_2 = False
-                if self.physics.pos_y_m >= self.physics.course_height_m - 0.05:
-                    self.auto_test_step = 4
-                    self.auto_test_timer = 0.0
-
-        # Etapa 4: Situação 4 (No 2º piso, chamada pelo botão desce 1)
-        elif self.auto_test_step == 4:
-            if self.auto_test_timer > 0.8 and self.auto_test_timer < 1.2:
-                self.plc.botao_desce_1 = True
-            elif self.auto_test_timer >= 1.2:
-                self.plc.botao_desce_1 = False
-                if self.physics.pos_y_m <= 0.05:
-                    self.auto_test_step = 5
-                    self.auto_test_active = False
-                    self._log("🎉 [SUCESSO TOTAL] Todas as 4 Situações SENAI foram validadas com pontuação MÁXIMA (10.0)!")
+        if self.plc.tranca_magnetica_da_porta_2:
+            self.lbl_diag_tranca2.setText("Tranca 2: TRANCADA (%Q0.3=1)")
+            self.lbl_diag_tranca2.setStyleSheet("color: #e74c3c; background: #232730; padding: 4px 8px; border-radius: 4px;")
+        else:
+            self.lbl_diag_tranca2.setText("Tranca 2: LIVRE / DESTRANCADA (%Q0.3=0)")
+            self.lbl_diag_tranca2.setStyleSheet("color: #2ecc71; background: #232730; padding: 4px 8px; border-radius: 4px;")
 
     def _apply_dark_theme(self):
         qss = """
