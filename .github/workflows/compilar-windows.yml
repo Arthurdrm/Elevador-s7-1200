@@ -38,4 +38,4 @@ jobs:
         with:
           name: Simulador-Elevador-S7-1200-Windows
           path: dist/Simulador_Elevador_S7_1200.exe
-          retention-days: 3
+          retention-days: 7
