@@ -23,7 +23,7 @@ Projeto completo de automação industrial, segurança operacional (NR-12) e sim
 
 ## 📸 Simulador Visual Interativo em PySide6
 
-![Preview do Simulador](dist/preview_elevador.png)
+![Preview do Simulador](docs/preview_elevador.png)
 
 > O simulador reproduz o corte transversal da fábrica de calçados de 2 andares, guincho com motorredutor, cabos de aço duplos, portas industriais animadas, travas magnéticas eletromagnéticas, sensores de fim de curso NF com rolete físico, tabela de I/O em tempo real e painel de diagnóstico operacional SCADA com intertravamentos e status dos contatores!
 
@@ -67,13 +67,11 @@ Projeto_Elevador_s7-1200/
 ├── docs/
 │   ├── ESPECIFICACAO_TECNICA.md          # Memorial descritivo da planta, análise de risco e NR-12
 │   ├── LADDER_DIAGRAM_GUIDE.md           # Guia com todas as redes em Ladder (LAD) em diagramas ASCII
-│   └── MANUAL_TIA_PORTAL.md              # Passo a passo completo para TIA Portal e S7-PLCSIM
+│   ├── MANUAL_TIA_PORTAL.md              # Passo a passo completo para TIA Portal e S7-PLCSIM
+│   └── preview_elevador.png              # Screenshot da interface gráfica em alta resolução
 ├── tests/
 │   ├── test_elevator_logic.py            # Testes unitários da lógica e intertravamentos
 │   └── test_elevator_operation.py        # Testes de operação e paradas de segurança
-├── dist/
-│   ├── Simulador_Elevador_S7_1200.exe    # Executável portátil para Windows
-│   └── preview_elevador.png              # Screenshot da interface gráfica em alta resolução
 ├── simulador.py                          # Ponto de entrada do simulador
 ├── run_simulador.sh                      # Script executável para Linux
 ├── run_testes.sh                         # Script para rodar bateria de testes pytest

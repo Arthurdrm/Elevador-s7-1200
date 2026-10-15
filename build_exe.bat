@@ -1,32 +1,39 @@
 @echo off
-chcp 65001 > nul
-echo =====================================================================
-echo  Gerando Executavel Standalone: Simulador_Elevador_S7_1200.exe
-echo  Compativel com Windows 10 e Windows 11 (64-bit)
-echo =====================================================================
+chcp 65001 >nul
+REM ============================================================
+REM  Compilação Local do Simulador Elevador S7-1200 para Windows
+REM  Basta executar este arquivo no terminal ou dar duplo clique.
+REM ============================================================
 
-where python >nul 2>nul
-if %ERRORLEVEL% neq 0 (
-    echo [ERRO] Python nao encontrado no PATH do sistema.
-    pause
-    exit /b 1
+echo ============================================================
+echo   GERADOR DE EXECUTAVEL (.EXE) - ELEVADOR S7-1200
+echo ============================================================
+echo.
+
+if not exist ".venv" (
+    echo [1/3] Criando ambiente virtual Python (.venv)...
+    python -m venv .venv 2>nul || py -m venv .venv
+) else (
+    echo [1/3] Ambiente virtual (.venv) localizado.
 )
 
-echo [1/3] Instalando / Atualizando dependencias...
-python -m pip install --quiet --upgrade pip
-python -m pip install --quiet -r requirements.txt
+if exist ".venv\Scripts\activate.bat" (
+    call .venv\Scripts\activate.bat
+)
 
-echo [2/3] Compilando via PyInstaller...
+echo.
+echo [2/3] Instalando dependencias e PyInstaller...
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip install pyinstaller
+
+echo.
+echo [3/3] Gerando o executavel com PyInstaller...
 pyinstaller simulador_elevador.spec --noconfirm --clean
 
-if %ERRORLEVEL% equ 0 (
-    echo.
-    echo =====================================================================
-    echo [SUCESSO] Executavel gerado em: dist\Simulador_Elevador_S7_1200.exe
-    echo =====================================================================
-) else (
-    echo.
-    echo [FALHA] Erro durante a compilacao do executavel.
-)
-
+echo.
+echo ============================================================
+echo   COMPILACAO LOCAL CONCLUIDA!
+echo   Executavel gerado em: dist\Simulador_Elevador_S7_1200.exe
+echo ============================================================
 pause
